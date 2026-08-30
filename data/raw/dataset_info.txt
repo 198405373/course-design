@@ -1,0 +1,11 @@
+Dataset Name: KolektorSDD (Kolektor Surface-Defect Dataset)
+Source: https://www.vicos.si/resources/kolektorsdd/
+License: CC BY-NC-SA 4.0 (Non-Commercial)
+Description: 
+  - 399 grayscale images of electrical commutator surfaces (plastic embedding)
+  - 52 defective, 347 non-defective (severe class imbalance)
+  - Image size: width=500 px, height varies 1240~1270 px
+  - Annotation: axis-aligned bounding boxes for defects (provided in separate .txt files)
+Purpose: Used for industrial defect detection task in this course design.
+Date downloaded: 2026-08-30
+Verification: Link valid as of this date.
