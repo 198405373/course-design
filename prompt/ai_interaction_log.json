@@ -1,0 +1,214 @@
+{
+  "meta": {
+    "title": "AI 协作过程日志（结构化 JSON）",
+    "course": "制造智能技术课程设计",
+    "project": "基于机器学习的工业产品质量智能检测系统",
+    "language": "zh-CN",
+    "schema_version": "1.0",
+    "generated_at": "2026-09-03",
+    "source": "由课程开发会话整理；按阶段记录用户目标、AI 处理、结果与纠错案例。",
+    "usage_note": "本文件为结构化摘要。逐字对话原文建议从所用 AI 工具导出并存至 prompt/raw/ 后随提交物归档。",
+    "key_commits": [
+      "82f4a1b fix(data): repair preprocessing & add CNN train/eval pipeline",
+      "f69702e feat(backend): Flask API + SQLite + dual-model fusion",
+      "b434013 feat(frontend): web UI for defect detection B/S demo",
+      "b0afdf5 feat(eval): fusion three-state evaluation on test set",
+      "ad8b7f8 feat(demo): stable demo image set generator + checklist",
+      "7982bf3 feat(ui): clear-history button + reset API"
+    ]
+  },
+  "records": [
+    {
+      "seq": 1,
+      "date": "2026-08-30",
+      "phase": "数据资源整理",
+      "goal": "下载并核验 KolektorSDD 数据集，编写 dataset_info 说明",
+      "ai_actions": [
+        "核对数据集官网来源与许可（CC BY-NC-SA 4.0）",
+        "确认 399 张图、52 缺陷/347 正常、宽500×高1249~1284 的元信息"
+      ],
+      "decision": "确定 500 宽×可变高的灰度图，需要后续统一尺寸处理",
+      "files": ["data/raw/dataset_info"],
+      "error_note": null
+    },
+    {
+      "seq": 2,
+      "date": "2026-09-03",
+      "phase": "环境配置",
+      "goal": "确定可运行 Python 环境并安装依赖",
+      "ai_actions": [
+        "探测系统与 conda 环境（base/AI/cv_tutorial）",
+        "选定 cv_tutorial：Python 3.10 + torch2.11(CUDA) + opencv/sklearn/pandas",
+        "补装 flask/pytest/requests 并验证"
+      ],
+      "decision": "统一使用 cv_tutorial 解释器；代码 device 自适应",
+      "files": ["requirements.txt"],
+      "error_note": "系统 Python 缺依赖；终端输出偶发丢失 → 采用输出写文件再读取、长任务用任务运行器"
+    },
+    {
+      "seq": 3,
+      "date": "2026-09-03",
+      "phase": "数据预处理审计",
+      "goal": "核实预处理产物与数据集官方是否一致",
+      "ai_actions": [
+        "通读 scripts/preprocess.ipynb 扫描逻辑",
+        "写审计脚本统计 raw/processed/splits/annotations"
+      ],
+      "decision": "发现 processed 798 文件 vs 官方 399 —— label.bmp 被误当图像入库（数据污染）",
+      "files": ["scripts/audit.py", "data/processed"],
+      "error_note": "ERROR-A：预处理把 *_label.bmp 当图像扫描，训练集一半为标注副本"
+    },
+    {
+      "seq": 4,
+      "date": "2026-09-03",
+      "phase": "预处理修复",
+      "goal": "重写预处理：只保留真实工件图、等比缩放+居中填充、分层划分",
+      "ai_actions": [
+        "scripts/preprocess.py：仅扫 *.jpg、排除 *_label*",
+        "等比缩放到长边384后居中补0（保形），掩码同步几何变换",
+        "按缺陷标签分层划分 70/15/15(seed42) → 279/60/60"
+      ],
+      "decision": "产物干净：images/masks=399；splits 只含真实图名",
+      "files": ["scripts/preprocess.py", "data/processed/dataset_meta.json"],
+      "error_note": null
+    },
+    {
+      "seq": 5,
+      "date": "2026-09-03",
+      "phase": "预处理二次审查",
+      "goal": "核对重跑后的掩码产物",
+      "ai_actions": ["列出 data/processed/masks 文件"],
+      "decision": "发现掩码仅 8 个文件 —— 保存名漏 kosXX 前缀被覆盖；修复命名与图像对齐后 399/399",
+      "files": ["scripts/preprocess.py"],
+      "error_note": "ERROR-B：掩码文件名丢失工件前缀导致互相覆盖"
+    },
+    {
+      "seq": 6,
+      "date": "2026-09-03",
+      "phase": "深度学习训练评估",
+      "goal": "设计轻量 CNN 并完成训练与评估",
+      "ai_actions": [
+        "建 ml/ 包：SmallCNN(约24.1万参数)+Dataset+transforms",
+        "scripts/train.py：类加权 CrossEntropy + ReduceLROnPlateau + 按验证平衡准确率存最优",
+        "scripts/evaluate.py：测试集指标/混淆矩阵/ROC/样例图"
+      ],
+      "decision": "最优 v1(60ep,batch32,lr1e-3,仅水平翻转)：验证 BAcc≈0.76；测试 BAcc≈0.78、缺陷Recall0.875、AUC≈0.86",
+      "files": ["ml/*", "scripts/train.py", "scripts/evaluate.py", "models/best_cnn.pt", "reports/evaluation_report.json"],
+      "error_note": null
+    },
+    {
+      "seq": 7,
+      "date": "2026-09-03",
+      "phase": "数据增强实验",
+      "goal": "判断是否加大在线增强提升泛化",
+      "ai_actions": ["实现平移/亮度抖动的 full 增强并 A/B 训练对比"],
+      "decision": "强增强在 279 张训练图上致欠拟合（验证 BAcc 0.75→0.5），默认仅水平翻转；full 保留为可选项",
+      "files": ["ml/dataset.py"],
+      "error_note": "ERROR-C：过度数据增强反噬，需实验验证而非直觉"
+    },
+    {
+      "seq": 8,
+      "date": "2026-09-03",
+      "phase": "传统方法探索（第3技术方向）",
+      "goal": "补一个真实作用的传统模式识别方向，非装饰",
+      "ai_actions": [
+        "尝试整图手工特征+RF：召回过低",
+        "尝试经典分割管线(背景差分+形态学+连通域)：正常件全误报",
+        "改为分带(LBP/纹理)特征+RF：8 条带逐带判别"
+      ],
+      "decision": "分带 RF：召回0.125但 Precision=1.0、AUC≈0.79 —— 与 CNN 互补 → 促成双证据融合设计",
+      "files": ["ml/features.py", "scripts/train_ml.py", "models/best_ml.pkl", "reports/evaluation_ml.json"],
+      "error_note": "ERROR-D：整图特征与纯分割在微缺陷+颗粒纹理上失效"
+    },
+    {
+      "seq": 9,
+      "date": "2026-09-03",
+      "phase": "后端与数据库",
+      "goal": "Flask 后端 + SQLite + 双证据裁决 + 人工复检闭环",
+      "ai_actions": [
+        "backend/app.py：/api/predict、records、review、stats、image、reset",
+        "backend/service.py：模型预热 + predict_image + decide_verdict(NG/REVIEW/OK)",
+        "backend/db.py：records 表、统计聚合、清空重置"
+      ],
+      "decision": "三态裁决：两路同判NG / 单路分歧REVIEW(人工) / 均正常OK；阈值可调",
+      "files": ["backend/*", "tests/test_api.py"],
+      "error_note": "ERROR-E：to_tensor 返回(C,H,W)缺 batch 维报 4D input → unsqueeze(0)"
+    },
+    {
+      "seq": 10,
+      "date": "2026-09-03",
+      "phase": "前端开发",
+      "goal": "前端走通完整业务流程",
+      "ai_actions": [
+        "frontend/index.html + static/{style.css,app.js,lib/echarts.min.js(本地)}",
+        "四区看板：上传→结果(三态/双路概率/缺陷带/耗时)→统计(KPI/饼图/趋势)→历史+复检"
+      ],
+      "decision": "浏览器实测 NG/OK/REVIEW 三态与复检闭环",
+      "files": ["frontend/*"],
+      "error_note": null
+    },
+    {
+      "seq": 11,
+      "date": "2026-09-03",
+      "phase": "推理体验优化",
+      "goal": "演示流畅：模型预热、显示推理耗时、上传重置状态、自动滚动",
+      "ai_actions": ["后台线程预热双模型；/api/predict 返回 latency_ms；前端按钮重置与滚动"],
+      "decision": "浏览器实测单次推理约130-320ms",
+      "files": ["backend/app.py", "backend/service.py", "frontend/static/app.js"],
+      "error_note": "latency_ms 曾写入内部 dict 但漏放返回 JSON → 补齐"
+    },
+    {
+      "seq": 12,
+      "date": "2026-09-03",
+      "phase": "融合评估",
+      "goal": "在测试集量化三态裁决的业务口径",
+      "ai_actions": ["scripts/eval_fusion.py：对 test 每张跑线上同款推理与裁决并聚合"],
+      "decision": "缺陷8→NG1/REVIEW6/漏1，拦截率0.875；正常52→OK36/误REVIEW16/误NG0",
+      "files": ["scripts/eval_fusion.py", "reports/evaluation_fusion.json"],
+      "error_note": null
+    },
+    {
+      "seq": 13,
+      "date": "2026-09-03",
+      "phase": "演示图集与域一致性",
+      "goal": "生成录视频用、结果稳定可复现的演示图集",
+      "ai_actions": [
+        "先按 raw 原图实测挑选：发现 raw 下双证据 NG 数=0",
+        "定位根因：分带 RF 对 JPEG 二次压缩域敏感",
+        "改为与训练同域的 processed 图挑选并复制，manifest 自洽"
+      ],
+      "decision": "图集7张覆盖 NG/OK/REVIEW(含放行与判废两种复检)，上传100%复现",
+      "files": ["scripts/prepare_demo.py", "docs/演示图集清单.md", "data/demo/manifest.json"],
+      "error_note": "ERROR-F：训练域(processed JPEG) 与 raw 域不一致致 RF 概率漂移"
+    },
+    {
+      "seq": 14,
+      "date": "2026-09-03",
+      "phase": "数据管理功能",
+      "goal": "录视频前一键清空历史",
+      "ai_actions": [
+        "db.reset_records（清表+重置自增到#1）",
+        "POST /api/records/reset + 前端 清空历史 按钮(confirm)+结果复位",
+        "pytest 覆盖（uploads 隔离到 tmp）"
+      ],
+      "decision": "15 项测试通过；浏览器验证清空→0/空→重传 ID=#1 NG",
+      "files": ["backend/app.py", "backend/db.py", "frontend/static/app.js", "tests/test_api.py"],
+      "error_note": null
+    },
+    {
+      "seq": 15,
+      "date": "2026-09-03",
+      "phase": "文档与材料",
+      "goal": "补齐提交物：SRS、报告大纲与初稿、答辩/视频素材、本日志",
+      "ai_actions": [
+        "docs/需求规格说明书.md（规格回填+作者确认项）",
+        "docs/设计报告撰写大纲.md 与 docs/设计报告.md（初稿，注明需作者改写）",
+        "docs/答辩PPT大纲与讲稿.md、docs/演示视频分镜脚本.md、docs/演示图集清单.md",
+        "process/AI协作过程档案.md 与本 JSON 日志"
+      ],
+      "decision": "文档齐备但报告正文/PPT/视频需作者本人完成并确保可讲解",
+      "files": ["docs/*", "process/*", "prompt/*"],
+      "error_note": "明确：AI 不代写需答辩讲解的正文，避免无法讲解风险"
+    }
+  ]
+}
