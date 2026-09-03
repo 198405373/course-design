@@ -1,0 +1,21 @@
+{
+  "threshold": 0.5,
+  "n_test": 60,
+  "n_defect": 8,
+  "n_normal": 52,
+  "defect_by_verdict": {
+    "OK": 1,
+    "NG": 1,
+    "REVIEW": 6
+  },
+  "normal_by_verdict": {
+    "OK": 36,
+    "NG": 0,
+    "REVIEW": 16
+  },
+  "defect_flagged_recall": 0.875,
+  "defect_miss": 1,
+  "normal_ok_rate": 0.6923,
+  "normal_false_review": 16,
+  "normal_false_ng": 0
+}
