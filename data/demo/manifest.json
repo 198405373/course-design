@@ -1,0 +1,79 @@
+[
+  {
+    "seq": 1,
+    "file": "01_ng_defect_kos28_Part3.jpg",
+    "kind": "ng_defect",
+    "orig": "kos28_Part3.jpg",
+    "gt": 1,
+    "verdict": "NG",
+    "p_cnn": 0.9823,
+    "p_ml": 0.726,
+    "guide": "双证据NG：两路概率均高，直接判不合格。复检可“确认缺陷”。"
+  },
+  {
+    "seq": 2,
+    "file": "02_ok_normal_kos24_Part5.jpg",
+    "kind": "ok_normal",
+    "orig": "kos24_Part5.jpg",
+    "gt": 0,
+    "verdict": "OK",
+    "p_cnn": 0.0321,
+    "p_ml": 0.046,
+    "guide": "正常OK：两路均低，直接放行。连传多张可展示稳定全绿。"
+  },
+  {
+    "seq": 3,
+    "file": "03_ok_normal_kos14_Part4.jpg",
+    "kind": "ok_normal",
+    "orig": "kos14_Part4.jpg",
+    "gt": 0,
+    "verdict": "OK",
+    "p_cnn": 0.045,
+    "p_ml": 0.012,
+    "guide": "正常OK：两路均低，直接放行。连传多张可展示稳定全绿。"
+  },
+  {
+    "seq": 4,
+    "file": "04_ok_normal_kos04_Part1.jpg",
+    "kind": "ok_normal",
+    "orig": "kos04_Part1.jpg",
+    "gt": 0,
+    "verdict": "OK",
+    "p_cnn": 0.0494,
+    "p_ml": 0.014,
+    "guide": "正常OK：两路均低，直接放行。连传多张可展示稳定全绿。"
+  },
+  {
+    "seq": 5,
+    "file": "05_review_norm_kos15_Part6.jpg",
+    "kind": "review_norm",
+    "orig": "kos15_Part6.jpg",
+    "gt": 0,
+    "verdict": "REVIEW",
+    "p_cnn": 0.8598,
+    "p_ml": 0.162,
+    "guide": "分歧且实际正常：CNN 高报、RF 不报。演示“复检-放行”，体现系统不误杀合格品。"
+  },
+  {
+    "seq": 6,
+    "file": "06_review_defect_kos46_Part7.jpg",
+    "kind": "review_defect",
+    "orig": "kos46_Part7.jpg",
+    "gt": 1,
+    "verdict": "REVIEW",
+    "p_cnn": 0.9107,
+    "p_ml": 0.138,
+    "guide": "分歧且实际缺陷：CNN 高报、RF 不报。演示“复检-确认缺陷”，体现不漏放。"
+  },
+  {
+    "seq": 7,
+    "file": "07_review_defect_kos48_Part5.jpg",
+    "kind": "review_defect",
+    "orig": "kos48_Part5.jpg",
+    "gt": 1,
+    "verdict": "REVIEW",
+    "p_cnn": 0.8884,
+    "p_ml": 0.038,
+    "guide": "分歧且实际缺陷：CNN 高报、RF 不报。演示“复检-确认缺陷”，体现不漏放。"
+  }
+]
