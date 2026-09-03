@@ -1,0 +1,13 @@
+{
+  "img_size": 384,
+  "n_images": 399,
+  "n_defect": 52,
+  "n_normal": 347,
+  "splits": {
+    "train": 279,
+    "val": 60,
+    "test": 60
+  },
+  "letterbox": "scale-to-longest-edge + center-pad",
+  "split_strategy": "stratified by has_defect (seed=42)"
+}
