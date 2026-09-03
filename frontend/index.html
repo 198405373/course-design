@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>工业产品表面缺陷智能检测系统</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/lib/echarts.min.js"></script>
+  <script>window.echarts || document.write('<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"><\/script>');</script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">⚙</span>
+      <div>
+        <h1>工业产品表面缺陷智能检测系统</h1>
+        <p class="sub">KolektorSDD · CNN + 传统特征 双证据融合 · 制造智能技术课程设计</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <label class="th-label">判定阈值
+        <input id="threshold" type="number" min="0.1" max="0.9" step="0.05" value="0.5" />
+      </label>
+      <span id="statusBadge" class="badge ok">● 服务正常</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- 左：上传与检测 -->
+    <section class="card" id="detectCard">
+      <h2 class="card-title">① 上传待检工件图像</h2>
+      <div id="dropZone" class="drop-zone" tabindex="0">
+        <input id="fileInput" type="file" accept="image/jpeg,image/png,image/bmp" hidden />
+        <div class="dz-inner">
+          <div class="dz-icon">⬆</div>
+          <p>点击选择 或 拖拽图片到此处</p>
+          <p class="muted">支持 jpg / png / bmp，自动等比缩放至 384×384</p>
+        </div>
+        <img id="preview" alt="预览" hidden />
+      </div>
+      <div id="loading" class="loading hidden">
+        <span class="spinner"></span><span>双模型推理中，请稍候…</span>
+      </div>
+    </section>
+
+    <!-- 中：检测结果 -->
+    <section class="card" id="resultCard">
+      <h2 class="card-title">② 检测结果</h2>
+      <div id="emptyResult" class="empty">尚无检测记录，请在左侧上传图像</div>
+      <div id="resultBody" class="hidden">
+        <div id="verdictBadge" class="verdict-badge">—</div>
+        <p id="verdictMsg" class="verdict-msg"></p>
+
+        <div class="model-compare">
+          <div class="model-row">
+            <div class="model-name">深度学习 CNN <small>高灵敏检出</small></div>
+            <div class="bar-track"><div id="barCnn" class="bar-fill"></div></div>
+            <div class="model-p" id="pCnn">0.00</div>
+          </div>
+          <div class="model-row">
+            <div class="model-name">传统特征 RF <small>高特异·分带 LBP</small></div>
+            <div class="bar-track"><div id="barMl" class="bar-fill ml"></div></div>
+            <div class="model-p" id="pMl">0.00</div>
+          </div>
+        </div>
+
+        <div class="meta-line" id="resultMeta"></div>
+        <div class="meta-line" id="fuseHint"></div>
+
+        <div class="actions">
+          <button id="btnReviewPass" class="btn ghost" disabled>复检-放行</button>
+          <button id="btnReviewFail" class="btn ghost danger" disabled>复检-确认缺陷</button>
+          <button id="btnViewImage" class="btn link" hidden>查看图像</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右：统计 -->
+    <section class="card" id="statsCard">
+      <h2 class="card-title">③ 质检统计 <button id="btnRefresh" class="btn small">刷新</button></h2>
+      <div class="kpis" id="kpis">
+        <div class="kpi"><span class="kpi-num" id="kTotal">0</span><span class="kpi-lab">检测总数</span></div>
+        <div class="kpi"><span class="kpi-num green" id="kOk">0</span><span class="kpi-lab">正常</span></div>
+        <div class="kpi"><span class="kpi-num red" id="kNg">0</span><span class="kpi-lab">缺陷</span></div>
+        <div class="kpi"><span class="kpi-num amber" id="kReview">0</span><span class="kpi-lab">待复检</span></div>
+      </div>
+      <div class="kpis sub">
+        <div class="kpi"><span class="kpi-num" id="kRate">0%</span><span class="kpi-lab">缺陷率</span></div>
+        <div class="kpi"><span class="kpi-num green" id="kPass">0</span><span class="kpi-lab">复检放行</span></div>
+        <div class="kpi"><span class="kpi-num red" id="kFail">0</span><span class="kpi-lab">复检确认</span></div>
+      </div>
+      <div class="chart-box"><div id="chartDist" class="chart"></div></div>
+      <div class="chart-box"><div id="chartTrend" class="chart"></div></div>
+    </section>
+  </main>
+
+  <!-- 历史记录 -->
+  <section class="card wide">
+    <h2 class="card-title">
+      <span>④ 检测历史</span>
+      <span class="title-btns">
+        <button id="btnRefreshHist" class="btn small">刷新</button>
+        <button id="btnResetHist" class="btn small danger">清空历史</button>
+      </span>
+    </h2>
+    <div class="table-wrap">
+      <table id="histTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>时间</th><th>文件名</th><th>判定</th>
+            <th>CNN 概率</th><th>RF 概率</th><th>缺陷带</th><th>复检</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+    <div id="histEmpty" class="empty hidden">暂无检测记录</div>
+  </section>
+
+  <footer class="foot">制造智能技术课程设计 · 基于 KolektorSDD 数据集（CC BY-NC-SA 4.0）· Vibe Coding</footer>
+
+  <!-- 图像查看弹窗 -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head"><span>检测图像</span><button id="modalClose" class="btn small">✕</button></div>
+      <img id="modalImg" alt="检测图像" />
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
